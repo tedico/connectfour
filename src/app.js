@@ -1,6 +1,7 @@
 console.log('yew!');
 const gameBoard = document.getElementById('game-board');
 const dropZone = document.getElementById('drop-zone');
+const messageZone = document.getElementById('message-zone')
 
 const RED = '🔴';
 const BLUE = '🔵';
@@ -8,6 +9,36 @@ const upperBoundCol = 6;
 const upperBoundRow = 5;
 const lowerBoundRowAndCol = 0;
 
+let gameStart = true;
+let haveWinner = false;
+let redIsNext = true;
+let chipValue = redIsNext ? RED : BLUE;
+let clicks = 0; // max is <= 49 this prevents the game from working if all the squares are filled up.
+
+const gameState = {
+  gameStart: true,
+  gamePlay: true,
+  haveWinner: false,
+  clicks: 0,
+  redIsNext: true,
+  chipValue: gameState.redIsNext ? RED : BLUE,
+  gameMessages: [
+    "Good move! Chuck 🥋 Norris bows to you with humility 🙏",
+    "Your move just put Einstein 🧠 to shame 👊",
+    "Yoda 🧙 comes to you for advice 🦉 with the move you just made",
+    "A sagely 🧘 move right there!",
+    "There's unstoppable 🛑 and then there's you 👈",
+    "🕺This isn't amateur night for sure with those kind of moves💃",
+    "Call the fire department 🚒 your move just made some 🔥",
+    "Mensa is like 🎒pre-school 🎓 for you! Great move!"
+  ],
+  gameDrawMessage: `🙅 It's a draw. Nobody wins 🙅`,
+  winningMessage: `🎉 WOOOHOOO! ${''} won! 🍾`,
+  greetMessage: `Hi there! ${''} are you ready to play?`,
+  resetMessage: `Do you want to play again?`
+}
+
+// rename this to boardState
 const boardModelArray = [
   [null, null, null, null, null, null, null],
   [null, null, null, null, null, null, null],
@@ -17,11 +48,32 @@ const boardModelArray = [
   [null, null, null, null, null, null, null],
 ];
 
-let gameStart = true;
-let haveWinner = false;
-let redIsNext = true;
-let chipValue = redIsNext ? RED : BLUE;
-let clicks = 0; // max is <= 49 this prevents the game from working if all the squares are filled up.
+
+const roll = (min, max, floatFlag) => {
+  let r = Math.random() * (max - min) + min
+  return floatFlag ? r : Math.floor(r)
+}
+
+const setGameMessage = (element, msgState) => (element.textContent = msgState)
+const setNextChipValue = (redIsNext) => (chipValue = redIsNext ? RED : BLUE);
+const winnerIs = (chpVal) => (chpVal === RED ? 'Red' : 'Blue')
+
+function setGameMessage(gameState) {
+  const {
+    gamePlay,
+    haveWinner,
+    gameMessages,
+    winningMessage
+  } = gameState
+
+  if (haveWinner) {
+    setGameMessage(messageZone, winningMessage)
+  }
+  if (gamePlay) {
+    setGameMessage(messageZone, gameMessages[roll(0, messages.gameMessages.length)])
+  }
+}
+
 
 function createDropZoneSquare(i) {
   const square = document.createElement('div');
@@ -74,11 +126,12 @@ function checkNullCount(dropChipOnColumn) {
   return numNull - 1; // this value represents the i-value because Column-value is the column value from the DOM
 }
 
-const setNextChipValue = (redIsNext) => (chipValue = redIsNext ? RED : BLUE);
-const winnerIs = (chpVal) => (chpVal === RED ? 'Red' : 'Blue')
-
 // place chip on gameboard
-function dropChip(e) {
+function dropChip(e, state) {
+  const {
+    haveWinner,
+    gamePlay
+  } = state
   clicks++;
   const columnVal = +e.target.id;
   const rowVal = checkNullCount(columnVal); //this will be checkNullCount fn
@@ -87,8 +140,33 @@ function dropChip(e) {
   const chipPosition = [rowVal, columnVal];
 
   if (checkWinner(boardModelArray, chipPosition, chipValue)) {
+    // get this section to work I need to update my state
+    // I added state as my second parameter for this function look at the listener too.
+    // gameState.haveWinner = true
+    // gameState.gamePlay = false
+    state = {
+      ...haveWinner:
+    }
+    setGameMessage(gameState)
+    debugger
+    // remove listeners in dropzone
+    // display reset game modal
+    // if yes
+    // init()
+    // else
+    // return
     console.log(`Game over ${winnerIs(chipValue)} won! Yew!`);
+  } else if (clicks >= 49) {
+    setGameMessage(gameState)
+    console.log("Game Draw! No winner!")
+    // remove listeners in dropzone
+    // display reset game modal
+    // if yes
+    // init()
+    // else
   } else {
+    // this works
+    setGameMessage(gameState)
     redIsNext = !redIsNext;
     setNextChipValue(redIsNext);
   }
@@ -230,4 +308,6 @@ function checkQuadrants(arr, chipPosition, chipValue) {
 
 
 
-dropZone.addEventListener('click', dropChip);
+dropZone.addEventListener('click', (e) => {
+  dropChip(e, gameState)
+});
