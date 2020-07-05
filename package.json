@@ -1,0 +1,17 @@
+{
+  "name": "my-project",
+  "version": "1.0.0",
+  "description": "My Project",
+  "main": "app.dev.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "pug -w ./src/ -o ./dist -P"
+  },
+  "keywords": [],
+  "author": "Ted Sandico",
+  "license": "MIT",
+  "devDependencies": {
+    "pug": "^3.0.0",
+    "pug-cli": "^1.0.0-alpha6"
+  }
+}
