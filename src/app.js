@@ -167,7 +167,6 @@ function dropChip(e) {
     // init()
     // else
   } else {
-    // this works
     const currState = {
       state: 'gamePlay',
     };
