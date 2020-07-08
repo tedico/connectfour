@@ -1,42 +1,13 @@
 console.log('yew!');
 const gameBoard = document.getElementById('game-board');
 const dropZone = document.getElementById('drop-zone');
-const messageZone = document.getElementById('message-zone')
+const messageZone = document.getElementById('message-zone');
 
 const RED = '🔴';
 const BLUE = '🔵';
 const upperBoundCol = 6;
 const upperBoundRow = 5;
 const lowerBoundRowAndCol = 0;
-
-let gameStart = true;
-let haveWinner = false;
-let redIsNext = true;
-let chipValue = redIsNext ? RED : BLUE;
-let clicks = 0; // max is <= 49 this prevents the game from working if all the squares are filled up.
-
-const gameState = {
-  gameStart: true,
-  gamePlay: true,
-  haveWinner: false,
-  clicks: 0,
-  redIsNext: true,
-  chipValue: gameState.redIsNext ? RED : BLUE,
-  gameMessages: [
-    "Good move! Chuck 🥋 Norris bows to you with humility 🙏",
-    "Your move just put Einstein 🧠 to shame 👊",
-    "Yoda 🧙 comes to you for advice 🦉 with the move you just made",
-    "A sagely 🧘 move right there!",
-    "There's unstoppable 🛑 and then there's you 👈",
-    "🕺This isn't amateur night for sure with those kind of moves💃",
-    "Call the fire department 🚒 your move just made some 🔥",
-    "Mensa is like 🎒pre-school 🎓 for you! Great move!"
-  ],
-  gameDrawMessage: `🙅 It's a draw. Nobody wins 🙅`,
-  winningMessage: `🎉 WOOOHOOO! ${''} won! 🍾`,
-  greetMessage: `Hi there! ${''} are you ready to play?`,
-  resetMessage: `Do you want to play again?`
-}
 
 // rename this to boardState
 const boardModelArray = [
@@ -48,32 +19,63 @@ const boardModelArray = [
   [null, null, null, null, null, null, null],
 ];
 
+let gameStart = true;
+let gamePlay = true;
+let haveWinner = false;
+let isGameDraw = false;
+let redIsNext = true;
+let chipValue = redIsNext ? RED : BLUE;
+let clicks = 0; // max is <= 49 this prevents the game from working if all the squares are filled up.
 
-const roll = (min, max, floatFlag) => {
-  let r = Math.random() * (max - min) + min
-  return floatFlag ? r : Math.floor(r)
-}
-
-const setGameMessage = (element, msgState) => (element.textContent = msgState)
+const setGameMessage = (element, msg) => (element.textContent = msg);
 const setNextChipValue = (redIsNext) => (chipValue = redIsNext ? RED : BLUE);
-const winnerIs = (chpVal) => (chpVal === RED ? 'Red' : 'Blue')
+const winnerIs = (chpVal) => (chpVal === RED ? 'Red' : 'Blue');
 
-function setGameMessage(gameState) {
+const messageFactory = (currState) => {
   const {
-    gamePlay,
-    haveWinner,
-    gameMessages,
-    winningMessage
-  } = gameState
+    state,
+    chipValue
+  } = currState;
 
-  if (haveWinner) {
-    setGameMessage(messageZone, winningMessage)
-  }
-  if (gamePlay) {
-    setGameMessage(messageZone, gameMessages[roll(0, messages.gameMessages.length)])
-  }
-}
+  const gamePlayMessages = [
+    'Good move! Chuck 🥋 Norris bows to you with humility 🙏',
+    'Your move just put Einstein 🧠 to shame 👊',
+    'Yoda 🧙 comes to you for advice 🦉 with the move you just made',
+    'A sagely 🧘 move right there!',
+    "There's unstoppable 🛑 and then there's you 👈",
+    "🕺This isn't amateur night for sure with those kind of moves💃",
+    'Call the fire department 🚒 your move just made some 🔥',
+    'Mensa is like 🎒pre-school 🎓 for you! Great move!',
+  ];
 
+  const roll = (min, max, floatFlag) => {
+    let r = Math.random() * (max - min) + min;
+    return floatFlag ? r : Math.floor(r);
+  };
+
+  switch (state) {
+    case 'gameStart': {
+      return `Hi there! Are you ready to play?`;
+      break;
+    }
+    case 'gamePlay': {
+      return gamePlayMessages[roll(0, gamePlayMessages.length)];
+      break;
+    }
+    case 'haveWinner': {
+      return `🎉 WOOOHOOO! ${chipValue} won! 🍾`;
+      break;
+    }
+    case 'isGameDraw': {
+      return `🙅 It's a draw. Nobody wins 🙅`;
+      break;
+    }
+    default: {
+      return `Do you want to play again?`;
+      break;
+    }
+  }
+};
 
 function createDropZoneSquare(i) {
   const square = document.createElement('div');
@@ -127,11 +129,7 @@ function checkNullCount(dropChipOnColumn) {
 }
 
 // place chip on gameboard
-function dropChip(e, state) {
-  const {
-    haveWinner,
-    gamePlay
-  } = state
+function dropChip(e) {
   clicks++;
   const columnVal = +e.target.id;
   const rowVal = checkNullCount(columnVal); //this will be checkNullCount fn
@@ -140,25 +138,29 @@ function dropChip(e, state) {
   const chipPosition = [rowVal, columnVal];
 
   if (checkWinner(boardModelArray, chipPosition, chipValue)) {
-    // get this section to work I need to update my state
-    // I added state as my second parameter for this function look at the listener too.
-    // gameState.haveWinner = true
-    // gameState.gamePlay = false
-    state = {
-      ...haveWinner:
-    }
-    setGameMessage(gameState)
-    debugger
+    // console.log(`Game over ${winnerIs(chipValue)} won! Yew!`);
+    haveWinner = true;
+    gamePlay = false;
+    const currState = {
+      state: 'haveWinner',
+      chipValue: chipValue,
+    };
+    const message = messageFactory(currState);
+    setGameMessage(messageZone, message);
     // remove listeners in dropzone
     // display reset game modal
     // if yes
     // init()
     // else
     // return
-    console.log(`Game over ${winnerIs(chipValue)} won! Yew!`);
   } else if (clicks >= 49) {
-    setGameMessage(gameState)
-    console.log("Game Draw! No winner!")
+    isGameDraw = true;
+    const currState = {
+      state: 'isGameDraw',
+    };
+    const message = messageFactory(currState);
+    setGameMessage(messageZone, message);
+    console.log('Game Draw! No winner!');
     // remove listeners in dropzone
     // display reset game modal
     // if yes
@@ -166,7 +168,11 @@ function dropChip(e, state) {
     // else
   } else {
     // this works
-    setGameMessage(gameState)
+    const currState = {
+      state: 'gamePlay',
+    };
+    const message = messageFactory(currState);
+    setGameMessage(messageZone, message);
     redIsNext = !redIsNext;
     setNextChipValue(redIsNext);
   }
@@ -177,8 +183,8 @@ function checkWinner(arr, chipPos, chipVal) {
   return [
     checkXDir(arr, chipPos, chipVal),
     checkYDir(arr, chipPos, chipVal),
-    checkQuadrants(arr, chipPos, chipVal)
-  ].some((val) => val === true)
+    checkQuadrants(arr, chipPos, chipVal),
+  ].some((val) => val === true);
 }
 
 // works
@@ -187,15 +193,15 @@ function checkYDir(arr, chipPosition, chipValue) {
   // "down" i++ j stays the same
   const [row, col] = chipPosition;
 
-  if ((row <= 2) && (row >= lowerBoundRowAndCol)) {
+  if (row <= 2 && row >= lowerBoundRowAndCol) {
     return [
       arr[row][col],
       arr[row + 1][col],
       arr[row + 2][col],
-      arr[row + 3][col]
-    ].every((chpVal) => chpVal === chipValue)
+      arr[row + 3][col],
+    ].every((chpVal) => chpVal === chipValue);
   } else {
-    return false
+    return false;
   }
 }
 
@@ -257,57 +263,53 @@ function checkXDir(arr, chipPosition, chipValue) {
 }
 
 function checkQuadrants(arr, chipPosition, chipValue) {
-  console.log("hi from checkQuadrants!")
-  const [row, col] = chipPosition
+  console.log('hi from checkQuadrants!');
+  const [row, col] = chipPosition;
   // check quadrant I
   // from chipPosition
   // up-right in inverse i-- j++
-  if (((row - 3) >= lowerBoundRowAndCol) && ((col + 3) <= upperBoundCol)) {
+  if (row - 3 >= lowerBoundRowAndCol && col + 3 <= upperBoundCol) {
     return [
       arr[row][col],
       arr[row - 1][col + 1],
       arr[row - 2][col + 2],
       arr[row - 3][col + 3],
-    ].every((chpVal) => chpVal === chipValue)
+    ].every((chpVal) => chpVal === chipValue);
   }
   // check check quadrant II
   // from chipPosition
   // up-right in inverse i-- j--
-  if (((row - 3) >= lowerBoundRowAndCol) && ((col - 3) >= lowerBoundRowAndCol)) {
+  if (row - 3 >= lowerBoundRowAndCol && col - 3 >= lowerBoundRowAndCol) {
     return [
       arr[row][col],
       arr[row - 1][col - 1],
       arr[row - 2][col - 2],
       arr[row - 3][col - 3],
-    ].every((chpVal) => chpVal === chipValue)
+    ].every((chpVal) => chpVal === chipValue);
   }
 
   // check check quadrant III
   // from chipPosition
   // up-right in inverse i++ j--
-  if (((row + 3) <= upperBoundCol) && ((col - 3) >= lowerBoundRowAndCol)) {
+  if (row + 3 <= upperBoundCol && col - 3 >= lowerBoundRowAndCol) {
     return [
       arr[row][col],
       arr[row + 1][col - 1],
       arr[row + 2][col - 2],
       arr[row + 3][col - 3],
-    ].every((chpVal) => chpVal === chipValue)
+    ].every((chpVal) => chpVal === chipValue);
   }
   // check check quadrant IV
   // from chipPosition
   // up-right in inverse i++ j++
-  if (((row + 3) <= upperBoundCol) && ((col + 3) <= upperBoundCol)) {
+  if (row + 3 <= upperBoundCol && col + 3 <= upperBoundCol) {
     return [
       arr[row][col],
       arr[row + 1][col + 1],
       arr[row + 2][col + 2],
       arr[row + 3][col + 3],
-    ].every((chpVal) => chpVal === chipValue)
+    ].every((chpVal) => chpVal === chipValue);
   }
 }
 
-
-
-dropZone.addEventListener('click', (e) => {
-  dropChip(e, gameState)
-});
+dropZone.addEventListener('click', dropChip);
